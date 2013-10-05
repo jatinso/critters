@@ -20,8 +20,7 @@ public class Board {
 	public Board(int width, int height) {
 
 		cost = new int[width][height];
-		
-		// At first there are no exits. So -1 indicates there's no route from here to an exit.
+		// At first there are no exits. So there's no route from any cell to an exit.
 		for (int x = 0; x < width; x++)
 			for (int y = 0; y < height; y++)
 				cost[x][y] = INFINITY;
@@ -30,7 +29,7 @@ public class Board {
 	public void addExit(int x, int y) {
 		// Cell at (x,y) gets cost zero, and all its neighbours are informed to
 		// update their costs.
-		cost[x][y] = 0;
+		setCost(x, y, 0);
 		
 		Queue<Point> queue = new LinkedList<Point>();
 		queue.add(new Point(x, y));
@@ -39,37 +38,44 @@ public class Board {
 		// of the exit cell.
 		while (!queue.isEmpty()) {
 			Point point = queue.remove();
-			int myCost = cost[point.x][point.y];
-			
+			int myCost = getCost(point);
 			for (Point neighbor : getNeighbors(point)) {
-				int neighborCost = cost[neighbor.x][neighbor.y];
-				
+				int neighborCost = getCost(neighbor);
 				// Only if a neighbour is impacted, add it to the queue
 				if (neighborCost == INFINITY || neighborCost > myCost + 1) {
-					cost[neighbor.x][neighbor.y] = myCost + 1;
+					setCost(neighbor.x, neighbor.y, myCost + 1);
 					queue.add(neighbor); // propagate your changes!
 				}
 			}
 		}
 	}
 
-	private List<Point> getNeighbors(Point point) {
-		List<Point> neighbours = new ArrayList<Board.Point>();
+	/*
+	 * Updates the cost and returns the old cost.
+	 */
+	private int setCost(int x, int y, int theCost) {
+		int oldCost = cost[x][y];
+		cost[x][y] = theCost;
+		return oldCost;
+	}
 
-		// An obstacle is not considered as a valid neighbour.
+	private List<Point> getNeighbors(Point point) {
+		List<Point> neighbors = new ArrayList<Board.Point>();
+
+		// An obstacle is not a valid neighbor.
 		if (point.x > 0 && !isBlocked(point.x - 1, point.y))
-			neighbours.add(new Point(point.x - 1, point.y));
+			neighbors.add(new Point(point.x - 1, point.y));
 
 		if (point.y > 0 && !isBlocked(point.x, point.y - 1))
-			neighbours.add(new Point(point.x, point.y - 1));
+			neighbors.add(new Point(point.x, point.y - 1));
 
 		if (point.x < cost.length - 1 && !isBlocked(point.x + 1, point.y))
-			neighbours.add(new Point(point.x + 1, point.y));
+			neighbors.add(new Point(point.x + 1, point.y));
 
 		if (point.y < cost[0].length - 1 && !isBlocked(point.x, point.y + 1))
-			neighbours.add(new Point(point.x, point.y + 1));
+			neighbors.add(new Point(point.x, point.y + 1));
 
-		return neighbours;
+		return neighbors;
 	}
 
 	public void addObstacle(int x, int y) {
@@ -77,22 +83,19 @@ public class Board {
 		// This list contains cells orphaned by the obstacle.
 		List<Point> orphans = new ArrayList<Point>();
 		int oldCost = getCost(x, y);
-		cost[x][y] = OBSTACLE; // new cost
+		makeObstacle(x, y);
 		orphans.addAll(getOrphansFor(x, y, oldCost));
 
-		// Now let's find out who else has become orphaned as we make their costs INFINITY.
+		// Now let's find out who else has become orphaned and make their costs INFINITY.
 		int i = 0;
 		while (i < orphans.size()) {
 			Point orphan = orphans.get(i++);
-			oldCost = getCost(orphan);
-			cost[orphan.x][orphan.y] = INFINITY;
+			oldCost = setCost(orphan.x, orphan.y, INFINITY);
 			orphans.addAll(getOrphansFor(orphan.x, orphan.y, oldCost));
 		}
 		
-		// All orphans now don't have a path to the exit. Let's find the best ones.
-		// This is an n^2 algorithm (where n is count of orphans) that keeps
-		// reducing cost round by round.
-		
+		// Let's find the best paths for each orphan to an exit.
+		// This is an n^2 algorithm (where n is count of orphans) that keeps reducing cost round by round.
 		boolean reducedCost = true;
 		while (reducedCost) {
 			reducedCost = false;
@@ -100,20 +103,24 @@ public class Board {
 				int bestCost = getBestCost(orphan);
 				int currentCost = getCost(orphan);
 				if (bestCost != INFINITY && (currentCost == INFINITY || bestCost < currentCost)) {
-					cost[orphan.x][orphan.y] = bestCost;
+					setCost(orphan.x, orphan.y, bestCost);
 					reducedCost = true;
 				}
 			}
 		}
 	}
 	
+	private void makeObstacle(int x, int y) {
+		cost[x][y] = OBSTACLE;	
+	}
+
 	private int getBestCost(Point point) {
 
 		int bestCost = INFINITY;
 		for (Point neighbor : getNeighbors(point)) {
 			int neighborCost = getCost(neighbor);
 			if (bestCost == INFINITY || (neighborCost != INFINITY && bestCost > neighborCost))
-				bestCost = getCost(neighbor);
+				bestCost = neighborCost;
 		}
 
 		if (bestCost == INFINITY)
@@ -122,12 +129,18 @@ public class Board {
 			return bestCost + 1; // since it was best neighbor cost.
 	}
 
+	/*
+	 * An orphan is a neighbor of yours who could only travel to an exit
+	 * via you, without incurring a greater cost. If he could take a different route
+	 * for the same cost, then he's not orphaned by you becoming an obstacle.
+	 */
 	private List<Point> getOrphansFor(int x, int y, int oldCost) {
 		List<Point> orphans = new ArrayList<Point>();
 
 		for (Point neighbor : getNeighbors(new Point(x, y))) {
 			// This neighbor is now worse off. So it's an orphan.
 			int currentCost = getCost(neighbor);
+
 			if (currentCost != INFINITY) {
 				int bestCost = getBestCost(neighbor);
 				if (bestCost == INFINITY || bestCost > oldCost + 1)
@@ -142,6 +155,14 @@ public class Board {
 		return cost[x][y] == OBSTACLE;
 	}
 
+	/**
+	 * Returns the cheapest cost to get to an exit. If there's no path to one, it
+	 * returns -1, which represents infinity.
+	 * 
+	 * @param x
+	 * @param y
+	 * @return
+	 */
 	public int getCost(int x, int y) {
 		if (isBlocked(x, y))
 			return INFINITY;
