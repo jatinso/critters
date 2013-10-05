@@ -91,22 +91,27 @@ public class Board {
 	}
 
 	public void addObstacle(int x, int y) {
-		handleOrphans(x, y, OBSTACLE);
+		int oldCost = setCost(x, y, OBSTACLE);
+		List<Point> orphans = new ArrayList<Point>();
+		handleOrphans(x, y, oldCost, orphans);
 	}
 
 	public void removeExit(int x, int y) {
-		handleOrphans(x, y, INFINITY);
+		int oldCost = setCost(x, y, INFINITY);
+		List<Point> orphans = new ArrayList<Point>();
+		orphans.add(new Point(x, y));
+		handleOrphans(x, y, oldCost, orphans);
 	}
 
-	private void handleOrphans(int x, int y, int newCost) {
-		
-		int oldCost = setCost(x, y, newCost);
+	/*
+	 * This method expands the list of orphans by finding out what other cell
+	 * would be orphaned as a result of the current orphans, and so on.
+	 * 
+	 * It then recomputes the best weights for these orphans.
+	 */
+	private void handleOrphans(int x, int y, int oldCost, List<Point> orphans) {
 
-		List<Point> orphans = new ArrayList<Point>();
-		
-		if (newCost == INFINITY)
-			orphans.add(new Point(x, y));
-		
+		// First add all orphans for the original distressed point (x, y).
 		orphans.addAll(getOrphansFor(x, y, oldCost));
 
 		// Now let's find out who else has become orphaned and make their costs INFINITY.
