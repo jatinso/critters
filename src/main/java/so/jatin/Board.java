@@ -30,21 +30,10 @@ public class Board {
 		// Cell at (x,y) gets cost zero, and all its neighbours are informed to
 		// update their costs.
 		setCost(x, y, 0);
-		propagate(x, y);
 		
-	}
-	
-	public void removeObstacle(int x, int y) {
-		int bestCost = getBestCost(new Point(x, y));
-		setCost(x, y, bestCost);
-		if (bestCost != INFINITY) // I.e. it can positively impact someone...
-			propagate(x, y);
-	}
-
-	private void propagate(int x, int y) {
 		Queue<Point> queue = new LinkedList<Point>();
 		queue.add(new Point(x, y));
-
+		
 		// This is a BFS that propagates out the cost changes due to the creation
 		// of the exit cell.
 		while (!queue.isEmpty()) {
@@ -52,14 +41,13 @@ public class Board {
 			int myCost = getCost(point);
 			for (Point neighbor : getNeighbors(point)) {
 				int neighborCost = getCost(neighbor);
-				// Only if a neighbor is impacted, add it to the queue
+				// Only if a neighbour is impacted, add it to the queue
 				if (neighborCost == INFINITY || neighborCost > myCost + 1) {
 					setCost(neighbor.x, neighbor.y, myCost + 1);
 					queue.add(neighbor); // propagate your changes!
 				}
 			}
 		}
-		
 	}
 
 	/*
@@ -203,5 +191,4 @@ public class Board {
 			return "[" + x + ", " + y + "]";
 		}
 	}
-
 }
