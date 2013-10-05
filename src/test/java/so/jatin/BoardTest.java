@@ -58,14 +58,15 @@ public class BoardTest {
 	private void assertBoardWithCertainObstaclesAndExits() {
 		/*
 		 * Costs should look like this (top left is (0,0)).
+		 * E represents an exit, which has cost 0.
 		 * X represents an obstacle, which has cost -2. 
 		 * That just means there's no path from an obstacle to an exit.
 		 * 
-		 * 1 0 1 1 0
-		 * 2 1 X 2 1
-		 * 3 2 1 X 2
-		 * 4 X 0 X 3
-		 * 5 6 X 5 4
+		 * 1 [E] 1  1 [E]
+		 * 2  1 [X] 2  1
+		 * 3  2  1 [X] 2
+		 * 4 [X][E][X] 3
+		 * 5  6 [X] 5  4
 		 */
 		
 		// Assert
