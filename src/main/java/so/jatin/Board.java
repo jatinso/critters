@@ -95,7 +95,7 @@ public class Board {
 		// This list contains cells orphaned by the obstacle.
 		List<Point> orphans = new ArrayList<Point>();
 		int oldCost = getCost(x, y);
-		makeObstacle(x, y);
+		cost[x][y] = OBSTACLE;	
 		orphans.addAll(getOrphansFor(x, y, oldCost));
 
 		// Now let's find out who else has become orphaned and make their costs INFINITY.
@@ -120,10 +120,6 @@ public class Board {
 				}
 			}
 		}
-	}
-	
-	private void makeObstacle(int x, int y) {
-		cost[x][y] = OBSTACLE;	
 	}
 
 	private int getBestCost(Point point) {
