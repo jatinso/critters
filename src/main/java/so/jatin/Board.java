@@ -93,14 +93,14 @@ public class Board {
 	public void addObstacle(int x, int y) {
 		int oldCost = setCost(x, y, OBSTACLE);
 		List<Point> orphans = new ArrayList<Point>();
-		handleOrphans(x, y, oldCost, orphans);
+		findOrphansAndRecomputeCosts(x, y, oldCost, orphans);
 	}
 
 	public void removeExit(int x, int y) {
 		int oldCost = setCost(x, y, INFINITY);
 		List<Point> orphans = new ArrayList<Point>();
 		orphans.add(new Point(x, y));
-		handleOrphans(x, y, oldCost, orphans);
+		findOrphansAndRecomputeCosts(x, y, oldCost, orphans);
 	}
 
 	/*
@@ -109,7 +109,7 @@ public class Board {
 	 * 
 	 * It then recomputes the best weights for these orphans.
 	 */
-	private void handleOrphans(int x, int y, int oldCost, List<Point> orphans) {
+	private void findOrphansAndRecomputeCosts(int x, int y, int oldCost, List<Point> orphans) {
 
 		// First add all orphans for the original distressed point (x, y).
 		orphans.addAll(getOrphansFor(x, y, oldCost));
