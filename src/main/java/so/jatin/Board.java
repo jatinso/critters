@@ -73,21 +73,36 @@ public class Board {
 	}
 
 	public void addObstacle(int x, int y) {
-		/*
-		 * When we add an obstacle, downstream cells (those with cost one higher than
-		 * this cell) may need to recompute their costs. And if they change, then
-		 * so would their downstream cells, and so on.
-		 */
-		Queue<Point> queue = new LinkedList<Point>();
-		queue.addAll(getDownstreamNeighbors(x, y));
-		cost[x][y] = OBSTACLE; // Note we have to update the cost AFTER the call to getDownstreamNeighbors().
 		
-		while (!queue.isEmpty()) {
-			Point point = queue.remove();
-			int updatedCost = getBestCost(point); // by looking at neighbors
-			if (getCost(point) != updatedCost) { // I have changed. So propagate.
-				queue.addAll(getDownstreamNeighbors(point.x, point.y));
-				cost[point.x][point.y] = updatedCost; // Note we have to update the cost AFTER the call to getDownstreamNeighbors().
+		// This list contains cells orphaned by the obstacle.
+		List<Point> orphans = new ArrayList<Point>();
+		int oldCost = getCost(x, y);
+		cost[x][y] = OBSTACLE; // new cost
+		orphans.addAll(getOrphansFor(x, y, oldCost));
+
+		// Now let's find out who else has become orphaned as we make their costs INFINITY.
+		int i = 0;
+		while (i < orphans.size()) {
+			Point orphan = orphans.get(i++);
+			oldCost = getCost(orphan);
+			cost[orphan.x][orphan.y] = INFINITY;
+			orphans.addAll(getOrphansFor(orphan.x, orphan.y, oldCost));
+		}
+		
+		// All orphans now don't have a path to the exit. Let's find the best ones.
+		// This is an n^2 algorithm (where n is count of orphans) that keeps
+		// reducing cost round by round.
+		
+		boolean reducedCost = true;
+		while (reducedCost) {
+			reducedCost = false;
+			for (Point orphan : orphans) {
+				int bestCost = getBestCost(orphan);
+				int currentCost = getCost(orphan);
+				if (bestCost != INFINITY && (currentCost == INFINITY || bestCost < currentCost)) {
+					cost[orphan.x][orphan.y] = bestCost;
+					reducedCost = true;
+				}
 			}
 		}
 	}
@@ -101,17 +116,26 @@ public class Board {
 				bestCost = getCost(neighbor);
 		}
 
-		return bestCost + 1; // since it was best neighbor cost.
+		if (bestCost == INFINITY)
+			return INFINITY;
+		else
+			return bestCost + 1; // since it was best neighbor cost.
 	}
 
-	private List<Point> getDownstreamNeighbors(int x, int y) {
-		List<Point> downstreamNeighbors = new ArrayList<Point>();
-		
-		for (Point neighbor : getNeighbors(new Point(x, y)))
-			if (getCost(neighbor) == getCost(x, y) + 1)
-				downstreamNeighbors.add(neighbor);
+	private List<Point> getOrphansFor(int x, int y, int oldCost) {
+		List<Point> orphans = new ArrayList<Point>();
 
-		return downstreamNeighbors;
+		for (Point neighbor : getNeighbors(new Point(x, y))) {
+			// This neighbor is now worse off. So it's an orphan.
+			int currentCost = getCost(neighbor);
+			if (currentCost != INFINITY) {
+				int bestCost = getBestCost(neighbor);
+				if (bestCost == INFINITY || bestCost > oldCost + 1)
+					orphans.add(neighbor);
+			}
+		}
+
+		return orphans;
 	}
 
 	private boolean isBlocked(int x, int y) {
@@ -119,7 +143,10 @@ public class Board {
 	}
 
 	public int getCost(int x, int y) {
-		return cost[x][y];
+		if (isBlocked(x, y))
+			return INFINITY;
+		else
+			return cost[x][y];
 	}
 
 	private int getCost(Point point) {
