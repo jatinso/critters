@@ -57,6 +57,72 @@ public class BoardTest {
 		subject.addExit(4,  0);
 
 	}
+
+	@Test
+	public void removeObstacle() {
+		// Arrange
+		subject = new Board(5, 5);
+
+		subject.addExit(1,  0);
+		subject.addExit(2,  3);
+		subject.addExit(4,  0);
+
+		subject.addObstacle(0, 3);
+		subject.addObstacle(2, 1);
+		subject.addObstacle(3, 2);
+		subject.addObstacle(1, 3);
+		subject.addObstacle(3, 3);
+		subject.addObstacle(2, 4);
+
+		// Act
+		subject.removeObstacle(2, 4);
+
+		// Assert
+		/*
+		 * Costs should look like this (top left is (0,0)).
+		 * O represents an exit, which has cost 0.
+		 * X represents an obstacle, which has cost -1.
+		 * Cost -1 represents that there's no path to an exit.
+		 * 
+		 *  1 [O] 1  1 [O]
+		 *  2  1 [X] 2  1
+		 *  3  2  1 [X] 2
+		 * [X][X][O][X] 3
+		 *  3  2  1  2  3
+		 */
+		
+		// Assert
+		assertEquals(1, subject.getCost(0, 0));
+		assertEquals(2, subject.getCost(0, 1));
+		assertEquals(3, subject.getCost(0, 2));
+		assertEquals(-1, subject.getCost(0, 3));
+		assertEquals(3, subject.getCost(0, 4));
+
+		assertEquals(0, subject.getCost(1, 0));
+		assertEquals(1, subject.getCost(1, 1));
+		assertEquals(2, subject.getCost(1, 2));
+		assertEquals(-1, subject.getCost(1, 3));
+		assertEquals(2, subject.getCost(1, 4));
+
+		assertEquals(1, subject.getCost(2, 0));
+		assertEquals(-1, subject.getCost(2, 1));
+		assertEquals(1, subject.getCost(2, 2));
+		assertEquals(0, subject.getCost(2, 3));
+		assertEquals(1, subject.getCost(2, 4));
+
+		assertEquals(1, subject.getCost(3, 0));
+		assertEquals(2, subject.getCost(3, 1));
+		assertEquals(-1, subject.getCost(3, 2));
+		assertEquals(-1, subject.getCost(3, 3));
+		assertEquals(2, subject.getCost(3, 4));
+
+		assertEquals(0, subject.getCost(4, 0));
+		assertEquals(1, subject.getCost(4, 1));
+		assertEquals(2, subject.getCost(4, 2));
+		assertEquals(3, subject.getCost(4, 3));
+		assertEquals(3, subject.getCost(4, 4));
+
+	}
 	
 	private void assertBoardWithCertainObstaclesAndExits() {
 		/*
