@@ -5,6 +5,9 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Queue;
 
+import edu.stanford.nlp.util.BinaryHeapPriorityQueue;
+import edu.stanford.nlp.util.PriorityQueue;
+
 /**
  * The Board is a 2D matrix of cells. It contains various exits and
  * maintains at all times the shortest path to the closest exit from
@@ -115,29 +118,41 @@ public class Board {
 		orphans.addAll(getOrphansFor(x, y, oldCost));
 
 		// Now let's find out who else has become orphaned and make their costs INFINITY.
-		int i = 0;
-		while (i < orphans.size()) {
-			Point orphan = orphans.get(i++);
-			oldCost = setCost(orphan.x, orphan.y, INFINITY);
-			orphans.addAll(getOrphansFor(orphan.x, orphan.y, oldCost));
-		}
-		
+		findAllOrphans(orphans);
+		// Put them into a priority queue
+		PriorityQueue<Point> priorityQueue = new BinaryHeapPriorityQueue<Point>();
+
+		for (Point orphan : orphans)
+			priorityQueue.add(orphan, getCostAsPriority(orphan)); // This PQ considers higher numbers as higher priority. So we negate best cost.
+
 		// Let's find the best paths for each orphan to an exit.
-		// This is an n^2 algorithm (where n is count of orphans) that keeps reducing cost round by round.
-		boolean reducedCost = true;
-		while (reducedCost) {
-			reducedCost = false;
-			for (Point orphan : orphans) {
-				int bestCost = getBestCost(orphan);
-				int currentCost = getCost(orphan);
-				if (bestCost != INFINITY && (currentCost == INFINITY || bestCost < currentCost)) {
-					setCost(orphan.x, orphan.y, bestCost);
-					reducedCost = true;
-				}
-			}
+		// This is an n*lg(n) algorithm where the best cost nodes are explored first.
+		while (!priorityQueue.isEmpty()) {
+			Point orphan = priorityQueue.removeFirst();
+			setCost(orphan.x, orphan.y, getBestCost(orphan));
+			for (Point neighbor : getNeighbors(orphan))
+				if (priorityQueue.contains(neighbor)) // Complexity?
+					priorityQueue.changePriority(neighbor, getCostAsPriority(neighbor));
 		}
 	}
 	
+	private double getCostAsPriority(Point point) {
+		int bestCost = getBestCost(point);
+		if (bestCost < 0)
+			return -Integer.MAX_VALUE;
+		else
+			return -bestCost;
+	}
+
+	private void findAllOrphans(List<Point> orphans) {
+		int i = 0;
+		while (i < orphans.size()) {
+			Point orphan = orphans.get(i++);
+			int oldCost = setCost(orphan.x, orphan.y, INFINITY);
+			orphans.addAll(getOrphansFor(orphan.x, orphan.y, oldCost));
+		}
+	}
+
 	private int getBestCost(Point point) {
 
 		int bestCost = INFINITY;
