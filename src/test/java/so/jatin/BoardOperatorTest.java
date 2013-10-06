@@ -1,81 +1,84 @@
 package so.jatin;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.*;
 
+import java.awt.Point;
+
+import org.junit.Before;
 import org.junit.Test;
 
 public class BoardOperatorTest {
 
 	private BoardOperator subject;
 
+	@Before
+	public void setUp() {
+		subject = new BoardOperator(new Board(5, 5));
+	}
+
 	@Test
 	public void withObstaclesAddedAfterExits() {
-		subject = new BoardOperator(5, 5);
+		subject.addExit(new Point(1, 0));
+		subject.addExit(new Point(2, 3));
+		subject.addExit(new Point(4, 0));
 
-		subject.addExit(1, 0);
-		subject.addExit(2, 3);
-		subject.addExit(4, 0);
-
-		subject.addObstacle(0, 3);
-		subject.addObstacle(2, 1);
-		subject.addObstacle(3, 2);
-		subject.addObstacle(1, 3);
-		subject.addObstacle(3, 3);
-		subject.addObstacle(2, 4);
+		subject.putObstacle(new Point(0, 3));
+		subject.putObstacle(new Point(2, 1));
+		subject.putObstacle(new Point(3, 2));
+		subject.putObstacle(new Point(1, 3));
+		subject.putObstacle(new Point(3, 3));
+		subject.putObstacle(new Point(2, 4));
 
 		assertBoardWithCertainObstaclesAndExits();
 	}
 	
 	@Test
 	public void withObstaclesAddedBeforeExits() {
-		subject = new BoardOperator(5, 5);
+		subject.putObstacle(new Point(0, 3));
+		subject.putObstacle(new Point(2, 1));
+		subject.putObstacle(new Point(3, 2));
+		subject.putObstacle(new Point(1, 3));
+		subject.putObstacle(new Point(3, 3));
+		subject.putObstacle(new Point(2, 4));
 
-		subject.addObstacle(0, 3);
-		subject.addObstacle(2, 1);
-		subject.addObstacle(3, 2);
-		subject.addObstacle(1, 3);
-		subject.addObstacle(3, 3);
-		subject.addObstacle(2, 4);
+		subject.addExit(new Point(1, 0));
+		subject.addExit(new Point(2, 3));
+		subject.addExit(new Point(4, 0));
 
-		subject.addExit(1, 0);
-		subject.addExit(2, 3);
-		subject.addExit(4, 0);
+		assertBoardWithCertainObstaclesAndExits();
 	}
 	
 	@Test
 	public void withObstaclesAndExitsAddedIntermingled() {
-		subject = new BoardOperator(5, 5);
+		subject.putObstacle(new Point(2, 1));
+		subject.addExit(new Point(1, 0));
+		subject.putObstacle(new Point(3, 2));
+		subject.putObstacle(new Point(0, 3));
+		subject.putObstacle(new Point(1, 3));
+		subject.addExit(new Point(2, 3));
+		subject.putObstacle(new Point(3, 3));
+		subject.putObstacle(new Point(2, 4));
+		subject.addExit(new Point(4, 0));
 
-		subject.addObstacle(2, 1);
-		subject.addExit(1, 0);
-		subject.addObstacle(3, 2);
-		subject.addObstacle(0, 3);
-		subject.addObstacle(1, 3);
-		subject.addExit(2, 3);
-		subject.addObstacle(3, 3);
-		subject.addObstacle(2, 4);
-		subject.addExit(4, 0);
-
+		assertBoardWithCertainObstaclesAndExits();
 	}
 
 	@Test
 	public void removeObstacle() {
 		// Arrange
-		subject = new BoardOperator(5, 5);
+		subject.addExit(new Point(1, 0));
+		subject.addExit(new Point(2, 3));
+		subject.addExit(new Point(4, 0));
 
-		subject.addExit(1,  0);
-		subject.addExit(2,  3);
-		subject.addExit(4,  0);
-
-		subject.addObstacle(0, 3);
-		subject.addObstacle(2, 1);
-		subject.addObstacle(3, 2);
-		subject.addObstacle(1, 3);
-		subject.addObstacle(3, 3);
-		subject.addObstacle(2, 4);
+		subject.putObstacle(new Point(0, 3));
+		subject.putObstacle(new Point(2, 1));
+		subject.putObstacle(new Point(3, 2));
+		subject.putObstacle(new Point(1, 3));
+		subject.putObstacle(new Point(3, 3));
+		subject.putObstacle(new Point(2, 4));
 
 		// Act
-		subject.removeObstacle(2, 4);
+		subject.removeObstacle(new Point(2, 4));
 
 		// Assert
 		/*
@@ -92,56 +95,54 @@ public class BoardOperatorTest {
 		 */
 		
 		// Assert
-		assertEquals(1, subject.getCost(0, 0));
-		assertEquals(2, subject.getCost(0, 1));
-		assertEquals(3, subject.getCost(0, 2));
-		assertEquals(-1, subject.getCost(0, 3));
-		assertEquals(3, subject.getCost(0, 4));
+		assertTrue(1 == subject.getCost(new Point(0, 0)));
+		assertTrue(2 == subject.getCost(new Point(0, 1)));
+		assertTrue(3 == subject.getCost(new Point(0, 2)));
+		assertNull(subject.getCost(new Point(0, 3)));
+		assertTrue(3 == subject.getCost(new Point(0, 4)));
 
-		assertEquals(0, subject.getCost(1, 0));
-		assertEquals(1, subject.getCost(1, 1));
-		assertEquals(2, subject.getCost(1, 2));
-		assertEquals(-1, subject.getCost(1, 3));
-		assertEquals(2, subject.getCost(1, 4));
+		assertTrue(0 == subject.getCost(new Point(1, 0)));
+		assertTrue(1 == subject.getCost(new Point(1, 1)));
+		assertTrue(2 == subject.getCost(new Point(1, 2)));
+		assertNull(subject.getCost(new Point(1, 3)));
+		assertTrue(2 == subject.getCost(new Point(1, 4)));
 
-		assertEquals(1, subject.getCost(2, 0));
-		assertEquals(-1, subject.getCost(2, 1));
-		assertEquals(1, subject.getCost(2, 2));
-		assertEquals(0, subject.getCost(2, 3));
-		assertEquals(1, subject.getCost(2, 4));
+		assertTrue(1 == subject.getCost(new Point(2, 0)));
+		assertNull(subject.getCost(new Point(2, 1)));
+		assertTrue(1 == subject.getCost(new Point(2, 2)));
+		assertTrue(0 == subject.getCost(new Point(2, 3)));
+		assertTrue(1 == subject.getCost(new Point(2, 4)));
 
-		assertEquals(1, subject.getCost(3, 0));
-		assertEquals(2, subject.getCost(3, 1));
-		assertEquals(-1, subject.getCost(3, 2));
-		assertEquals(-1, subject.getCost(3, 3));
-		assertEquals(2, subject.getCost(3, 4));
+		assertTrue(1 == subject.getCost(new Point(3, 0)));
+		assertTrue(2 == subject.getCost(new Point(3, 1)));
+		assertNull(subject.getCost(new Point(3, 2)));
+		assertNull(subject.getCost(new Point(3, 3)));
+		assertTrue(2 == subject.getCost(new Point(3, 4)));
 
-		assertEquals(0, subject.getCost(4, 0));
-		assertEquals(1, subject.getCost(4, 1));
-		assertEquals(2, subject.getCost(4, 2));
-		assertEquals(3, subject.getCost(4, 3));
-		assertEquals(3, subject.getCost(4, 4));
+		assertTrue(0 == subject.getCost(new Point(4, 0)));
+		assertTrue(1 == subject.getCost(new Point(4, 1)));
+		assertTrue(2 == subject.getCost(new Point(4, 2)));
+		assertTrue(3 == subject.getCost(new Point(4, 3)));
+		assertTrue(3 == subject.getCost(new Point(4, 4)));
 
 	}
 
 	@Test
 	public void removeExit() {
 		// Arrange
-		subject = new BoardOperator(5, 5);
+		subject.addExit(new Point(1, 0));
+		subject.addExit(new Point(2, 3));
+		subject.addExit(new Point(4, 0));
 
-		subject.addExit(1, 0);
-		subject.addExit(2, 3);
-		subject.addExit(4, 0);
-
-		subject.addObstacle(0, 3);
-		subject.addObstacle(2, 1);
-		subject.addObstacle(3, 2);
-		subject.addObstacle(1, 3);
-		subject.addObstacle(3, 3);
-		subject.addObstacle(2, 4);
+		subject.putObstacle(new Point(0, 3));
+		subject.putObstacle(new Point(2, 1));
+		subject.putObstacle(new Point(3, 2));
+		subject.putObstacle(new Point(1, 3));
+		subject.putObstacle(new Point(3, 3));
+		subject.putObstacle(new Point(2, 4));
 
 		// Act
-		subject.removeExit(2, 3);
+		subject.removeExit(new Point(2, 3));
 
 		// Assert
 		/*
@@ -158,35 +159,35 @@ public class BoardOperatorTest {
 		 */
 		
 		// Assert
-		assertEquals(1, subject.getCost(0, 0));
-		assertEquals(2, subject.getCost(0, 1));
-		assertEquals(3, subject.getCost(0, 2));
-		assertEquals(-1, subject.getCost(0, 3));
-		assertEquals(-1, subject.getCost(0, 4));
+		assertTrue(1 == subject.getCost(new Point(0, 0)));
+		assertTrue(2 == subject.getCost(new Point(0, 1)));
+		assertTrue(3 == subject.getCost(new Point(0, 2)));
+		assertNull(subject.getCost(new Point(0, 3)));
+		assertNull(subject.getCost(new Point(0, 4)));
 
-		assertEquals(0, subject.getCost(1, 0));
-		assertEquals(1, subject.getCost(1, 1));
-		assertEquals(2, subject.getCost(1, 2));
-		assertEquals(-1, subject.getCost(1, 3));
-		assertEquals(-1, subject.getCost(1, 4));
+		assertTrue(0 == subject.getCost(new Point(1, 0)));
+		assertTrue(1 == subject.getCost(new Point(1, 1)));
+		assertTrue(2 == subject.getCost(new Point(1, 2)));
+		assertNull(subject.getCost(new Point(1, 3)));
+		assertNull(subject.getCost(new Point(1, 4)));
 
-		assertEquals(1, subject.getCost(2, 0));
-		assertEquals(-1, subject.getCost(2, 1));
-		assertEquals(3, subject.getCost(2, 2));
-		assertEquals(4, subject.getCost(2, 3));
-		assertEquals(-1, subject.getCost(2, 4));
+		assertTrue(1 == subject.getCost(new Point(2, 0)));
+		assertNull(subject.getCost(new Point(2, 1)));
+		assertTrue(3 == subject.getCost(new Point(2, 2)));
+		assertTrue(4 == subject.getCost(new Point(2, 3)));
+		assertNull(subject.getCost(new Point(2, 4)));
 
-		assertEquals(1, subject.getCost(3, 0));
-		assertEquals(2, subject.getCost(3, 1));
-		assertEquals(-1, subject.getCost(3, 2));
-		assertEquals(-1, subject.getCost(3, 3));
-		assertEquals(5, subject.getCost(3, 4));
+		assertTrue(1 == subject.getCost(new Point(3, 0)));
+		assertTrue(2 == subject.getCost(new Point(3, 1)));
+		assertNull(subject.getCost(new Point(3, 2)));
+		assertNull(subject.getCost(new Point(3, 3)));
+		assertTrue(5 == subject.getCost(new Point(3, 4)));
 
-		assertEquals(0, subject.getCost(4, 0));
-		assertEquals(1, subject.getCost(4, 1));
-		assertEquals(2, subject.getCost(4, 2));
-		assertEquals(3, subject.getCost(4, 3));
-		assertEquals(4, subject.getCost(4, 4));
+		assertTrue(0 == subject.getCost(new Point(4, 0)));
+		assertTrue(1 == subject.getCost(new Point(4, 1)));
+		assertTrue(2 == subject.getCost(new Point(4, 2)));
+		assertTrue(3 == subject.getCost(new Point(4, 3)));
+		assertTrue(4 == subject.getCost(new Point(4, 4)));
 
 	}
 	
@@ -205,34 +206,34 @@ public class BoardOperatorTest {
 		 */
 		
 		// Assert
-		assertEquals(1, subject.getCost(0, 0));
-		assertEquals(2, subject.getCost(0, 1));
-		assertEquals(3, subject.getCost(0, 2));
-		assertEquals(-1, subject.getCost(0, 3));
-		assertEquals(-1, subject.getCost(0, 4));
+		assertTrue(1 == subject.getCost(new Point(0, 0)));
+		assertTrue(2 == subject.getCost(new Point(0, 1)));
+		assertTrue(3 == subject.getCost(new Point(0, 2)));
+		assertNull(subject.getCost(new Point(0, 3)));
+		assertNull(subject.getCost(new Point(0, 4)));
 
-		assertEquals(0, subject.getCost(1, 0));
-		assertEquals(1, subject.getCost(1, 1));
-		assertEquals(2, subject.getCost(1, 2));
-		assertEquals(-1, subject.getCost(1, 3));
-		assertEquals(-1, subject.getCost(1, 4));
+		assertTrue(0 == subject.getCost(new Point(1, 0)));
+		assertTrue(1 == subject.getCost(new Point(1, 1)));
+		assertTrue(2 == subject.getCost(new Point(1, 2)));
+		assertNull(subject.getCost(new Point(1, 3)));
+		assertNull(subject.getCost(new Point(1, 4)));
 
-		assertEquals(1, subject.getCost(2, 0));
-		assertEquals(-1, subject.getCost(2, 1));
-		assertEquals(1, subject.getCost(2, 2));
-		assertEquals(0, subject.getCost(2, 3));
-		assertEquals(-1, subject.getCost(2, 4));
+		assertTrue(1 == subject.getCost(new Point(2, 0)));
+		assertNull(subject.getCost(new Point(2, 1)));
+		assertTrue(1 == subject.getCost(new Point(2, 2)));
+		assertTrue(0 == subject.getCost(new Point(2, 3)));
+		assertNull(subject.getCost(new Point(2, 4)));
 
-		assertEquals(1, subject.getCost(3, 0));
-		assertEquals(2, subject.getCost(3, 1));
-		assertEquals(-1, subject.getCost(3, 2));
-		assertEquals(-1, subject.getCost(3, 3));
-		assertEquals(5, subject.getCost(3, 4));
+		assertTrue(1 == subject.getCost(new Point(3, 0)));
+		assertTrue(2 == subject.getCost(new Point(3, 1)));
+		assertNull(subject.getCost(new Point(3, 2)));
+		assertNull(subject.getCost(new Point(3, 3)));
+		assertTrue(5 == subject.getCost(new Point(3, 4)));
 
-		assertEquals(0, subject.getCost(4, 0));
-		assertEquals(1, subject.getCost(4, 1));
-		assertEquals(2, subject.getCost(4, 2));
-		assertEquals(3, subject.getCost(4, 3));
-		assertEquals(4, subject.getCost(4, 4));
+		assertTrue(0 == subject.getCost(new Point(4, 0)));
+		assertTrue(1 == subject.getCost(new Point(4, 1)));
+		assertTrue(2 == subject.getCost(new Point(4, 2)));
+		assertTrue(3 == subject.getCost(new Point(4, 3)));
+		assertTrue(4 == subject.getCost(new Point(4, 4)));
 	}
 }

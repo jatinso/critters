@@ -10,207 +10,173 @@ import edu.stanford.nlp.util.BinaryHeapPriorityQueue;
 import edu.stanford.nlp.util.PriorityQueue;
 
 /**
- * The BoardOperator is a 2D matrix of cells. It contains various exits and
- * maintains at all times the shortest path to the closest exit from
- * any cell. Some of the cells can be marked damaged (obstacles)
- * which lengthen the paths from cells to exits.
+ * The BoardOperator operates on a 2D matrix of cells (a board) that
+ * contains various exits and maintains at all times the shortest path 
+ * to the closest exit from any cell. Some of the cells can be marked 
+ * damaged (obstacles) which lengthen the paths from cells to exits.
+ * 
+ * This class is responsible for propagating changes to the board.
  */
 public class BoardOperator {
+
+	private final Board board;
 	
-	private final int[][] cost;
-	private static final int OBSTACLE = -2;
-	private static final int INFINITY = -1;
-
-	public BoardOperator(int width, int height) {
-
-		cost = new int[width][height];
-		// At first there are no exits. So there's no route from any cell to an exit.
-		for (int x = 0; x < width; x++)
-			for (int y = 0; y < height; y++)
-				cost[x][y] = INFINITY;
+	public BoardOperator(Board board) {
+		this.board = board;
 	}
 
-	public void addExit(int x, int y) {
-		// Cell at (x,y) gets cost zero, and all its neighbors are informed to
-		// update their costs.
-		setCost(x, y, 0);
-		propagate(x, y);
-		
-	}
-	
-	public void removeObstacle(int x, int y) {
-		int bestCost = getBestCost(new Point(x, y));
-		setCost(x, y, bestCost);
-		if (bestCost != INFINITY) // I.e. it can positively impact someone...
-			propagate(x, y);
+	/**
+	 * Get the cost of traveling from this cell to an exit.
+	 * @param point
+	 * @return
+	 */
+	public Integer getCost(Point point) {
+		return board.getCost(point);
 	}
 
-	private void propagate(int x, int y) {
+	/**
+	 * This point becomes an exit. That means it's cost goes to zero and it's neighborhood's
+	 * costs likely go down.
+	 * @param point
+	 */
+	public void addExit(Point point) {
+		// point gets cost zero, and all its neighbors are informed to update their costs.
+		board.setCost(point, 0);
+		propagateCosts(point);
+	}
+
+	/**
+	 * Remove the obstacle previously at this point. That means we'll have to recompute
+	 * what it's cost is, and the effect of this change on the neighborhood.
+	 * @param point
+	 */
+	public void removeObstacle(Point point) {
+		Integer lowestCost = board.calculateCostFromNeighbors(point);
+		board.setCost(point, lowestCost);
+		if (lowestCost != null) // I.e. it can positively impact someone...
+			propagateCosts(point);
+	}
+
+	/*
+	 * This performs a BFS traversal, updating cell costs outwards of the initial point.
+	 */
+	private void propagateCosts(Point point) {
 		Queue<Point> queue = new LinkedList<Point>();
-		queue.add(new Point(x, y));
+		queue.add(point);
 
-		// This is a BFS that propagates out the cost changes due to the creation
-		// of the exit cell.
 		while (!queue.isEmpty()) {
-			Point point = queue.remove();
-			int myCost = getCost(point);
-			for (Point neighbor : getNeighbors(point)) {
-				int neighborCost = getCost(neighbor);
-				// Only if a neighbor is impacted, add it to the queue
-				if (neighborCost == INFINITY || neighborCost > myCost + 1) {
-					setCost(neighbor.x, neighbor.y, myCost + 1);
-					queue.add(neighbor); // propagate your changes!
+			point = queue.remove();
+			Integer pCost = board.getCost(point);
+			
+			if (pCost != null) { // i.e. p can positively impact others..
+				for (Point neighbor : board.getLiveNeighbors(point)) {
+					Integer neighborCost = board.getCost(neighbor);
+					if (neighborCost == null || neighborCost > pCost + 1) {
+						board.setCost(neighbor, pCost + 1);
+						queue.add(neighbor); // propagate your changes!
+					}
 				}
 			}
 		}
+	}
+
+	/**
+	 * Put an obstacle at this point and update the neighborhood costs.
+	 * @param point
+	 */
+	public void putObstacle(Point point) {
+		Integer oldCost = board.getCost(point);
+		board.putObstacle(point);
 		
+		if (oldCost != null) { // I.e. this point can have a negative impact on the neighborhood.
+			List<Point> orphans = findAllOrphans(point, oldCost);
+			recomputeCostsForOrphans(orphans);
+		}
+	}
+
+	/**
+	 * Remove the exit (cost zero) from this point and update the neighborhood costs.
+	 * @param point
+	 */
+	public void removeExit(Point point) {
+		board.clearCost(point);
+		List<Point> orphans = findAllOrphans(point, 0);
+		orphans.add(point); // This point is now an orphan too.
+		recomputeCostsForOrphans(orphans);
 	}
 
 	/*
-	 * Updates the cost and returns the old cost.
+	 * This method recomputes the best weights for these orphans.
 	 */
-	private int setCost(int x, int y, int theCost) {
-		int oldCost = cost[x][y];
-		cost[x][y] = theCost;
-		return oldCost;
-	}
-
-	private List<Point> getNeighbors(Point point) {
-		List<Point> neighbors = new ArrayList<Point>();
-
-		// An obstacle is not a valid neighbor.
-		if (point.x > 0 && !isBlocked(point.x - 1, point.y))
-			neighbors.add(new Point(point.x - 1, point.y));
-
-		if (point.y > 0 && !isBlocked(point.x, point.y - 1))
-			neighbors.add(new Point(point.x, point.y - 1));
-
-		if (point.x < cost.length - 1 && !isBlocked(point.x + 1, point.y))
-			neighbors.add(new Point(point.x + 1, point.y));
-
-		if (point.y < cost[0].length - 1 && !isBlocked(point.x, point.y + 1))
-			neighbors.add(new Point(point.x, point.y + 1));
-
-		return neighbors;
-	}
-
-	public void addObstacle(int x, int y) {
-		int oldCost = setCost(x, y, OBSTACLE);
-		List<Point> orphans = new ArrayList<Point>();
-		findOrphansAndRecomputeCosts(x, y, oldCost, orphans);
-	}
-
-	public void removeExit(int x, int y) {
-		int oldCost = setCost(x, y, INFINITY);
-		List<Point> orphans = new ArrayList<Point>();
-		orphans.add(new Point(x, y));
-		findOrphansAndRecomputeCosts(x, y, oldCost, orphans);
-	}
-
-	/*
-	 * This method expands the list of orphans by finding out what other cell
-	 * would be orphaned as a result of the current orphans, and so on.
-	 * 
-	 * It then recomputes the best weights for these orphans.
-	 */
-	private void findOrphansAndRecomputeCosts(int x, int y, int oldCost, List<Point> orphans) {
-
-		// First add all orphans for the original distressed point (x, y).
-		orphans.addAll(getOrphansFor(x, y, oldCost));
-
-		// Now let's find out who else has become orphaned and make their costs INFINITY.
-		findAllOrphans(orphans);
-		// Put them into a priority queue
+	private void recomputeCostsForOrphans(List<Point> orphans) {
 		PriorityQueue<Point> priorityQueue = new BinaryHeapPriorityQueue<Point>();
 
 		for (Point orphan : orphans)
-			priorityQueue.add(orphan, getCostAsPriority(orphan)); // This PQ considers higher numbers as higher priority. So we negate best cost.
+			priorityQueue.add(orphan, getCostAsPriority(orphan));
 
 		// Let's find the best paths for each orphan to an exit.
-		// This is an n*lg(n) algorithm where the best cost nodes are explored first.
+		// This is an n*lg(n) algorithm where the lowest cost nodes are explored first.
 		while (!priorityQueue.isEmpty()) {
 			Point orphan = priorityQueue.removeFirst();
-			setCost(orphan.x, orphan.y, getBestCost(orphan));
-			for (Point neighbor : getNeighbors(orphan))
-				if (priorityQueue.contains(neighbor)) // Complexity?
+			board.setCost(orphan, board.calculateCostFromNeighbors(orphan));
+
+			for (Point neighbor : board.getLiveNeighbors(orphan))
+				if (priorityQueue.contains(neighbor)) // TODO Complexity?
 					priorityQueue.changePriority(neighbor, getCostAsPriority(neighbor));
 		}
 	}
-	
+
+	/*
+	 * We want to assign higher priority values for lower costs.
+	 */
 	private double getCostAsPriority(Point point) {
-		int bestCost = getBestCost(point);
-		if (bestCost < 0)
+		Integer bestCost = board.calculateCostFromNeighbors(point);
+		if (bestCost == null)
 			return -Integer.MAX_VALUE;
 		else
 			return -bestCost;
 	}
 
-	private void findAllOrphans(List<Point> orphans) {
-		int i = 0;
-		while (i < orphans.size()) {
-			Point orphan = orphans.get(i++);
-			int oldCost = setCost(orphan.x, orphan.y, INFINITY);
-			orphans.addAll(getOrphansFor(orphan.x, orphan.y, oldCost));
-		}
-	}
-
-	private int getBestCost(Point point) {
-
-		int bestCost = INFINITY;
-		for (Point neighbor : getNeighbors(point)) {
-			int neighborCost = getCost(neighbor);
-			if (bestCost == INFINITY || (neighborCost != INFINITY && bestCost > neighborCost))
-				bestCost = neighborCost;
-		}
-
-		if (bestCost == INFINITY)
-			return INFINITY;
-		else
-			return bestCost + 1; // since it was best neighbor cost.
-	}
-
 	/*
-	 * An orphan is a neighbor of yours who could only travel to an exit
-	 * via you, without incurring a greater cost. If he could take a different route
-	 * for the same cost, then he's not orphaned by you becoming an obstacle.
+	 * Find all the chains of cells that would be orphaned by the input point's cost being cleared.
+	 * 
+	 * All orphans have their costs cleared as part of this method.
 	 */
-	private List<Point> getOrphansFor(int x, int y, int oldCost) {
+	private List<Point> findAllOrphans(Point point, Integer oldCost) {
 		List<Point> orphans = new ArrayList<Point>();
+		orphans.addAll(getOrphansFor(point, oldCost)); // initial orphans due to point.
 
-		for (Point neighbor : getNeighbors(new Point(x, y))) {
-			// This neighbor is now worse off. So it's an orphan.
-			int currentCost = getCost(neighbor);
-
-			if (currentCost != INFINITY) {
-				int bestCost = getBestCost(neighbor);
-				if (bestCost == INFINITY || bestCost > oldCost + 1)
-					orphans.add(neighbor);
-			}
+		int i = 0;
+		while (i < orphans.size()) { // now get all the chains of newly created orphans.
+			Point orphan = orphans.get(i++);
+			oldCost = board.getCost(orphan);
+			board.clearCost(orphan);
+			orphans.addAll(getOrphansFor(orphan, oldCost));
 		}
 
 		return orphans;
 	}
 
-	private boolean isBlocked(int x, int y) {
-		return cost[x][y] == OBSTACLE;
-	}
-
-	/**
-	 * Returns the cheapest cost to get to an exit. If there's no path to one, it
-	 * returns -1, which represents infinity.
-	 * 
-	 * @param x
-	 * @param y
-	 * @return
+	/*
+	 * An orphan is a neighbor of yours who could only travel to an exit
+	 * via you, without incurring a greater cost. If he could take a different route
+	 * for the same cost, then he's not orphaned by you losing your path to an exit.
 	 */
-	public int getCost(int x, int y) {
-		if (isBlocked(x, y))
-			return INFINITY;
-		else
-			return cost[x][y];
-	}
+	private List<Point> getOrphansFor(Point point, int oldCost) {
+		List<Point> orphans = new ArrayList<Point>();
 
-	private int getCost(Point point) {
-		return getCost(point.x, point.y);
+		for (Point neighbor : board.getLiveNeighbors(point)) {
+			// This neighbor is now worse off. So it's an orphan.
+			Integer currentNeighborCost = board.getCost(neighbor);
+
+			if (currentNeighborCost != null && currentNeighborCost == oldCost + 1) { // it potentially depended on point.
+				Integer lowestCostAfterLosingParent = board.calculateCostFromNeighbors(neighbor);
+				if (lowestCostAfterLosingParent == null || lowestCostAfterLosingParent > oldCost + 1) {
+					orphans.add(neighbor);
+				}
+			}
+		}
+
+		return orphans;
 	}
 }
