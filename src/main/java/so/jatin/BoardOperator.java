@@ -10,18 +10,18 @@ import edu.stanford.nlp.util.BinaryHeapPriorityQueue;
 import edu.stanford.nlp.util.PriorityQueue;
 
 /**
- * The Board is a 2D matrix of cells. It contains various exits and
+ * The BoardOperator is a 2D matrix of cells. It contains various exits and
  * maintains at all times the shortest path to the closest exit from
  * any cell. Some of the cells can be marked damaged (obstacles)
  * which lengthen the paths from cells to exits.
  */
-public class Board {
+public class BoardOperator {
 	
 	private final int[][] cost;
 	private static final int OBSTACLE = -2;
 	private static final int INFINITY = -1;
 
-	public Board(int width, int height) {
+	public BoardOperator(int width, int height) {
 
 		cost = new int[width][height];
 		// At first there are no exits. So there's no route from any cell to an exit.

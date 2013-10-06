@@ -4,13 +4,13 @@ import static org.junit.Assert.assertEquals;
 
 import org.junit.Test;
 
-public class BoardTest {
+public class BoardOperatorTest {
 
-	private Board subject;
+	private BoardOperator subject;
 
 	@Test
 	public void withObstaclesAddedAfterExits() {
-		subject = new Board(5, 5);
+		subject = new BoardOperator(5, 5);
 
 		subject.addExit(1, 0);
 		subject.addExit(2, 3);
@@ -28,7 +28,7 @@ public class BoardTest {
 	
 	@Test
 	public void withObstaclesAddedBeforeExits() {
-		subject = new Board(5, 5);
+		subject = new BoardOperator(5, 5);
 
 		subject.addObstacle(0, 3);
 		subject.addObstacle(2, 1);
@@ -44,7 +44,7 @@ public class BoardTest {
 	
 	@Test
 	public void withObstaclesAndExitsAddedIntermingled() {
-		subject = new Board(5, 5);
+		subject = new BoardOperator(5, 5);
 
 		subject.addObstacle(2, 1);
 		subject.addExit(1, 0);
@@ -61,7 +61,7 @@ public class BoardTest {
 	@Test
 	public void removeObstacle() {
 		// Arrange
-		subject = new Board(5, 5);
+		subject = new BoardOperator(5, 5);
 
 		subject.addExit(1,  0);
 		subject.addExit(2,  3);
@@ -127,7 +127,7 @@ public class BoardTest {
 	@Test
 	public void removeExit() {
 		// Arrange
-		subject = new Board(5, 5);
+		subject = new BoardOperator(5, 5);
 
 		subject.addExit(1, 0);
 		subject.addExit(2, 3);
