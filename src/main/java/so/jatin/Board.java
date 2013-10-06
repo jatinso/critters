@@ -1,5 +1,6 @@
 package so.jatin;
 
+import java.awt.Point;
 import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
@@ -11,8 +12,8 @@ import edu.stanford.nlp.util.PriorityQueue;
 /**
  * The Board is a 2D matrix of cells. It contains various exits and
  * maintains at all times the shortest path to the closest exit from
- * any cell. Some of the cells can be marked damaged (obstacle cells)
- * which impact the paths from cells to exits.
+ * any cell. Some of the cells can be marked damaged (obstacles)
+ * which lengthen the paths from cells to exits.
  */
 public class Board {
 	
@@ -30,7 +31,7 @@ public class Board {
 	}
 
 	public void addExit(int x, int y) {
-		// Cell at (x,y) gets cost zero, and all its neighbours are informed to
+		// Cell at (x,y) gets cost zero, and all its neighbors are informed to
 		// update their costs.
 		setCost(x, y, 0);
 		propagate(x, y);
@@ -75,7 +76,7 @@ public class Board {
 	}
 
 	private List<Point> getNeighbors(Point point) {
-		List<Point> neighbors = new ArrayList<Board.Point>();
+		List<Point> neighbors = new ArrayList<Point>();
 
 		// An obstacle is not a valid neighbor.
 		if (point.x > 0 && !isBlocked(point.x - 1, point.y))
@@ -211,23 +212,5 @@ public class Board {
 
 	private int getCost(Point point) {
 		return getCost(point.x, point.y);
-	}
-
-	/*
-	 * This is a convenience class for holding x and y coordinates.
-	 */
-	private class Point {
-		public final int x;
-		public final int y;
-		
-		public Point(int x, int y) {
-			this.x = x;
-			this.y = y;
-		}
-
-		@Override
-		public String toString() {
-			return "[" + x + ", " + y + "]";
-		}
 	}
 }
